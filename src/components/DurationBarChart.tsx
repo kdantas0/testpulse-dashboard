@@ -1,48 +1,47 @@
-import type { Test } from "../App";
-
-type Props = {
-  data: Test[];
+type DurationItem = {
+  feature: string;
+  avgDuration: number;
 };
 
-export function DurationBarChart({ data }: Props) {
-  if (!data.length) return null;
+type DurationBarChartProps = {
+  data: DurationItem[];
+};
 
-  const maxDuration = Math.max(...data.map((t) => t.duration));
+export function DurationBarChart({ data }: DurationBarChartProps) {
+  const max = Math.max(...data.map((item) => item.avgDuration), 1);
 
   return (
-    <div
-      style={{
-        padding: 20,
-        border: "1px solid #ccc",
-        borderRadius: 8,
-      }}
-    >
-      <h3>Duração por teste</h3>
+    <div>
+      <h4 style={{ marginTop: 0, marginBottom: 16 }}>Duração média por funcionalidade</h4>
 
-      {data.map((item, index) => (
-        <div key={`${item.name}-${index}`} style={{ marginBottom: 14 }}>
-          <div style={{ marginBottom: 4 }}>{item.name}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {data.map((item) => (
+          <div key={item.feature}>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>{item.feature}</div>
 
-          <div
-            style={{
-              height: 16,
-              background: "#eee",
-              borderRadius: 6,
-              overflow: "hidden",
-            }}
-          >
             <div
               style={{
-                height: "100%",
-                width: `${(item.duration / maxDuration) * 100}%`,
-                background: item.status === "failed" ? "#ef4444" : "#22c55e",
+                background: "#e5e7eb",
+                borderRadius: 999,
+                height: 14,
+                overflow: "hidden",
               }}
-            />
-          </div>
+            >
+              <div
+                style={{
+                  width: `${(item.avgDuration / max) * 100}%`,
+                  background: "#3b82f6",
+                  height: "100%",
+                }}
+              />
+            </div>
 
-          <small>{item.duration} ms</small>
-        </div>
-      ))}
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              {item.avgDuration > 0 ? `${item.avgDuration} ms` : "-"}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

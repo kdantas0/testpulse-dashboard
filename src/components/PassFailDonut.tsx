@@ -1,71 +1,68 @@
-﻿type Props = {
+type PassFailDonutProps = {
   passed: number;
   failed: number;
+  notExecuted: number;
 };
 
-export function PassFailDonut({ passed, failed }: Props) {
-  const total = passed + failed;
+export function PassFailDonut({
+  passed,
+  failed,
+  notExecuted,
+}: PassFailDonutProps) {
+  const total = passed + failed + notExecuted;
   const passedPercent = total ? (passed / total) * 100 : 0;
   const failedPercent = total ? (failed / total) * 100 : 0;
 
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const passedLength = (passedPercent / 100) * circumference;
-  const failedLength = (failedPercent / 100) * circumference;
-
   return (
-    <div
-      style={{
-        padding: 20,
-        border: "1px solid #ccc",
-        borderRadius: 8,
-        textAlign: "center",
-      }}
-    >
-      <h3>Pass vs Fail</h3>
+    <div style={{ textAlign: "center" }}>
+      <h4 style={{ marginTop: 0 }}>Gráfico geral dos casos</h4>
 
-      <svg width="180" height="180" viewBox="0 0 180 180">
-        <g transform="translate(90,90)">
-          <circle
-            r={radius}
-            fill="none"
-            stroke="#eee"
-            strokeWidth="20"
-          />
+      <div
+        style={{
+          width: 220,
+          height: 220,
+          margin: "0 auto 16px",
+          borderRadius: "50%",
+          background: `conic-gradient(
+            #22c55e 0% ${passedPercent}%,
+            #ef4444 ${passedPercent}% ${passedPercent + failedPercent}%,
+            #d1d5db ${passedPercent + failedPercent}% 100%
+          )`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 115,
+            height: 115,
+            borderRadius: "50%",
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            color: "#111827",
+            flexDirection: "column",
+          }}
+        >
+          <span style={{ fontSize: 28 }}>{total}</span>
+          <span style={{ fontSize: 12, color: "#6b7280" }}>casos</span>
+        </div>
+      </div>
 
-          <circle
-            r={radius}
-            fill="none"
-            stroke="#22c55e"
-            strokeWidth="20"
-            strokeDasharray={`${passedLength} ${circumference}`}
-            transform="rotate(-90)"
-          />
-
-          <circle
-            r={radius}
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="20"
-            strokeDasharray={`${failedLength} ${circumference}`}
-            strokeDashoffset={-passedLength}
-            transform="rotate(-90)"
-          />
-
-          <text
-            x="0"
-            y="5"
-            textAnchor="middle"
-            fontSize="18"
-            fontWeight="bold"
-          >
-            {total}
-          </text>
-        </g>
-      </svg>
-
-      <p style={{ color: "green", margin: 4 }}>Passed: {passed}</p>
-      <p style={{ color: "red", margin: 4 }}>Failed: {failed}</p>
+      <div style={{ fontSize: 14, lineHeight: 1.9 }}>
+        <div style={{ color: "#22c55e", fontWeight: 700 }}>
+          Passed: {passed}
+        </div>
+        <div style={{ color: "#ef4444", fontWeight: 700 }}>
+          Failed: {failed}
+        </div>
+        <div style={{ color: "#6b7280", fontWeight: 700 }}>
+          Não executado: {notExecuted}
+        </div>
+      </div>
     </div>
   );
 }
