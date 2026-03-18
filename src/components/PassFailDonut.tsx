@@ -10,13 +10,12 @@ export function PassFailDonut({
   notExecuted,
 }: PassFailDonutProps) {
   const total = passed + failed + notExecuted;
+
   const passedPercent = total ? (passed / total) * 100 : 0;
   const failedPercent = total ? (failed / total) * 100 : 0;
 
   return (
     <div style={{ textAlign: "center" }}>
-      <h4 style={{ marginTop: 0 }}>Gráfico geral dos casos</h4>
-
       <div
         style={{
           width: 220,
@@ -42,9 +41,8 @@ export function PassFailDonut({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontWeight: 700,
-            color: "#111827",
             flexDirection: "column",
+            fontWeight: 700,
           }}
         >
           <span style={{ fontSize: 28 }}>{total}</span>
