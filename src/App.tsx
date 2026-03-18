@@ -1,66 +1,157 @@
 import { useMemo } from "react";
 import { dailyReport } from "./dailyReport";
 
-function StatusDonutChart({
+type ReportItem = {
+  us: string;
+  passed: number;
+  failed: number;
+  notExecuted: number;
+  bugsOpen: number;
+  bugsClosed: number;
+};
+
+function formatPercent(value: number) {
+  return `${Math.round(value)}%`;
+}
+
+function getTotal(item: ReportItem) {
+  return item.passed + item.failed + item.notExecuted;
+}
+
+function getCoverage(item: ReportItem) {
+  const total = getTotal(item);
+  if (total === 0) return 0;
+  return ((item.passed + item.failed) / total) * 100;
+}
+
+function getStatusLabel(item: ReportItem) {
+  if (item.failed > 0) return "Atenção";
+  if (item.notExecuted > 0) return "Parcial";
+  return "Saudável";
+}
+
+function getStatusColors(status: string) {
+  switch (status) {
+    case "Atenção":
+      return {
+        bg: "cornsilk",
+        border: "sandybrown",
+        text: "chocolate",
+      };
+    case "Parcial":
+      return {
+        bg: "aliceblue",
+        border: "lightskyblue",
+        text: "royalblue",
+      };
+    default:
+      return {
+        bg: "honeydew",
+        border: "lightgreen",
+        text: "seagreen",
+      };
+  }
+}
+
+function DonutChart({
   passed,
   failed,
   notExecuted,
-  size = 150,
+  size = 170,
+  strokeWidth = 24,
 }: {
   passed: number;
   failed: number;
   notExecuted: number;
   size?: number;
+  strokeWidth?: number;
 }) {
   const total = passed + failed + notExecuted;
-  const passedPercent = total ? (passed / total) * 100 : 0;
-  const failedPercent = total ? (failed / total) * 100 : 0;
+  const safeTotal = total || 1;
+
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+
+  const passedLength = (passed / safeTotal) * circumference;
+  const failedLength = (failed / safeTotal) * circumference;
+  const notExecutedLength = (notExecuted / safeTotal) * circumference;
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          margin: "0 auto 14px",
-          borderRadius: "50%",
-          background: `conic-gradient(
-            #22c55e 0% ${passedPercent}%,
-            #ef4444 ${passedPercent}% ${passedPercent + failedPercent}%,
-            #d1d5db ${passedPercent + failedPercent}% 100%
-          )`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)",
-        }}
-      >
-        <div
-          style={{
-            width: size * 0.54,
-            height: size * 0.54,
-            borderRadius: "50%",
-            background: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            fontWeight: 700,
-            color: "#111827",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-          }}
-        >
-          <span style={{ fontSize: size * 0.18 }}>{total}</span>
-          <span style={{ fontSize: size * 0.07, color: "#6b7280" }}>
-            casos
-          </span>
-        </div>
-      </div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`rotate(-90 ${center} ${center})`}>
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="gainsboro"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="limegreen"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${passedLength} ${circumference - passedLength}`}
+            strokeDashoffset={0}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="tomato"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${failedLength} ${circumference - failedLength}`}
+            strokeDashoffset={-passedLength}
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke="lightgray"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${notExecutedLength} ${circumference - notExecutedLength}`}
+            strokeDashoffset={-(passedLength + failedLength)}
+          />
+        </g>
 
-      <div style={{ fontSize: 13, lineHeight: 1.8 }}>
-        <div style={{ color: "#16a34a", fontWeight: 700 }}>Passed: {passed}</div>
-        <div style={{ color: "#dc2626", fontWeight: 700 }}>Failed: {failed}</div>
-        <div style={{ color: "#6b7280", fontWeight: 700 }}>
+        <text
+          x="50%"
+          y="48%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{ fontSize: 28, fontWeight: 800, fill: "midnightblue" }}
+        >
+          {total}
+        </text>
+        <text
+          x="50%"
+          y="61%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{ fontSize: 12, fill: "slategray", fontWeight: 600 }}
+        >
+          casos
+        </text>
+      </svg>
+
+      <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.7 }}>
+        <div style={{ color: "green", fontWeight: 700 }}>Passed: {passed}</div>
+        <div style={{ color: "red", fontWeight: 700 }}>Failed: {failed}</div>
+        <div style={{ color: "gray", fontWeight: 700 }}>
           Não executado: {notExecuted}
         </div>
       </div>
@@ -68,66 +159,113 @@ function StatusDonutChart({
   );
 }
 
-function BugsDonutChart({
-  bugsOpen,
-  bugsClosed,
-  size = 150,
+function MiniDonut({
+  passed,
+  failed,
+  notExecuted,
+  size = 74,
+  strokeWidth = 12,
 }: {
-  bugsOpen: number;
-  bugsClosed: number;
+  passed: number;
+  failed: number;
+  notExecuted: number;
   size?: number;
+  strokeWidth?: number;
 }) {
-  const total = bugsOpen + bugsClosed;
-  const openPercent = total ? (bugsOpen / total) * 100 : 0;
+  const total = passed + failed + notExecuted;
+  const safeTotal = total || 1;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+
+  const passedLength = (passed / safeTotal) * circumference;
+  const failedLength = (failed / safeTotal) * circumference;
+  const notExecutedLength = (notExecuted / safeTotal) * circumference;
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <g transform={`rotate(-90 ${center} ${center})`}>
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="gainsboro"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="limegreen"
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${passedLength} ${circumference - passedLength}`}
+          strokeDashoffset={0}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="tomato"
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${failedLength} ${circumference - failedLength}`}
+          strokeDashoffset={-passedLength}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="lightgray"
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${notExecutedLength} ${circumference - notExecutedLength}`}
+          strokeDashoffset={-(passedLength + failedLength)}
+        />
+      </g>
+
+      <text
+        x="50%"
+        y="48%"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ fontSize: 18, fontWeight: 800, fill: "midnightblue" }}
+      >
+        {total}
+      </text>
+      <text
+        x="50%"
+        y="63%"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ fontSize: 8, fill: "slategray", fontWeight: 700 }}
+      >
+        CASOS
+      </text>
+    </svg>
+  );
+}
+
+function ProgressBar({ value }: { value: number }) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: 8,
+        background: "gainsboro",
+        borderRadius: 999,
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          width: size,
-          height: size,
-          margin: "0 auto 14px",
-          borderRadius: "50%",
-          background: `conic-gradient(
-            #f59e0b 0% ${openPercent}%,
-            #3b82f6 ${openPercent}% 100%
-          )`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)",
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          height: "100%",
+          background: "royalblue",
+          borderRadius: 999,
         }}
-      >
-        <div
-          style={{
-            width: size * 0.54,
-            height: size * 0.54,
-            borderRadius: "50%",
-            background: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            fontWeight: 700,
-            color: "#111827",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-          }}
-        >
-          <span style={{ fontSize: size * 0.18 }}>{total}</span>
-          <span style={{ fontSize: size * 0.07, color: "#6b7280" }}>
-            bugs
-          </span>
-        </div>
-      </div>
-
-      <div style={{ fontSize: 13, lineHeight: 1.8 }}>
-        <div style={{ color: "#d97706", fontWeight: 700 }}>
-          Abertos: {bugsOpen}
-        </div>
-        <div style={{ color: "#2563eb", fontWeight: 700 }}>
-          Fechados: {bugsClosed}
-        </div>
-      </div>
+      />
     </div>
   );
 }
@@ -139,197 +277,169 @@ function KpiCard({
 }: {
   title: string;
   value: string | number;
-  subtitle?: string;
+  subtitle: string;
 }) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: "white",
+        border: "1px solid gainsboro",
         borderRadius: 16,
-        padding: 20,
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+        padding: "18px 16px",
+        minHeight: 88,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        textAlign: "center",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
-      <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: "slategray", marginBottom: 8 }}>
         {title}
       </div>
       <div
         style={{
-          fontSize: 32,
+          fontSize: 18,
           fontWeight: 800,
-          color: "#111827",
-          lineHeight: 1,
+          color: "midnightblue",
+          marginBottom: 6,
         }}
       >
         {value}
       </div>
-      {subtitle ? (
-        <div style={{ marginTop: 8, fontSize: 13, color: "#9ca3af" }}>
-          {subtitle}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ProgressBar({
-  value,
-  color = "#2563eb",
-}: {
-  value: number;
-  color?: string;
-}) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: 10,
-        borderRadius: 999,
-        background: "#e5e7eb",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          width: `${Math.max(0, Math.min(100, value))}%`,
-          height: "100%",
-          background: color,
-          borderRadius: 999,
-        }}
-      />
+      <div style={{ fontSize: 11, color: "darkgray" }}>{subtitle}</div>
     </div>
   );
 }
 
 export default function App() {
-  const totals = useMemo(() => {
-    const passed = dailyReport.reduce((acc, item) => acc + item.passed, 0);
-    const failed = dailyReport.reduce((acc, item) => acc + item.failed, 0);
-    const notExecuted = dailyReport.reduce(
-      (acc, item) => acc + item.notExecuted,
-      0
-    );
-    const bugsOpen = dailyReport.reduce((acc, item) => acc + item.bugsOpen, 0);
-    const bugsClosed = dailyReport.reduce(
-      (acc, item) => acc + item.bugsClosed,
-      0
-    );
+  const report = useMemo<ReportItem[]>(() => dailyReport as ReportItem[], []);
 
-    const total = passed + failed + notExecuted;
+  const summary = useMemo(() => {
+    const totalCases = report.reduce((acc, item) => acc + getTotal(item), 0);
+    const passed = report.reduce((acc, item) => acc + item.passed, 0);
+    const failed = report.reduce((acc, item) => acc + item.failed, 0);
+    const notExecuted = report.reduce((acc, item) => acc + item.notExecuted, 0);
+    const bugsOpen = report.reduce((acc, item) => acc + item.bugsOpen, 0);
+    const bugsClosed = report.reduce((acc, item) => acc + item.bugsClosed, 0);
     const executed = passed + failed;
-    const coverage = total ? Math.round((executed / total) * 100) : 0;
-    const passRate = executed ? Math.round((passed / executed) * 100) : 0;
-    const totalBugs = bugsOpen + bugsClosed;
+    const coverage = totalCases === 0 ? 0 : (executed / totalCases) * 100;
+    const passRate = executed === 0 ? 0 : (passed / executed) * 100;
+
+    const mostCritical = [...report].sort((a, b) => {
+      if (b.failed !== a.failed) return b.failed - a.failed;
+      if (b.notExecuted !== a.notExecuted) return b.notExecuted - a.notExecuted;
+      return getTotal(b) - getTotal(a);
+    })[0];
 
     return {
+      totalCases,
+      executed,
       passed,
       failed,
       notExecuted,
-      total,
-      executed,
-      coverage,
-      passRate,
       bugsOpen,
       bugsClosed,
-      totalBugs,
+      coverage,
+      passRate,
+      mostCritical,
     };
-  }, []);
-
-  const worstUs = useMemo(() => {
-    if (!dailyReport.length) return null;
-
-    return [...dailyReport].sort((a, b) => {
-      if (b.failed !== a.failed) return b.failed - a.failed;
-      if (b.notExecuted !== a.notExecuted) return b.notExecuted - a.notExecuted;
-      return b.bugsOpen - a.bugsOpen;
-    })[0];
-  }, []);
+  }, [report]);
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#f3f6fb",
-        padding: 32,
-        fontFamily: "Arial, sans-serif",
-        color: "#111827",
+        background: "rgb(243,246,251)",
+        padding: "28px 16px 40px",
+        fontFamily:
+          'Inter, Arial, Helvetica, sans-serif',
+        color: "midnightblue",
       }}
     >
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <div
           style={{
-            marginBottom: 24,
-            background:
-              "linear-gradient(135deg, #ffffff 0%, #eef4ff 100%)",
-            border: "1px solid #e5e7eb",
-            borderRadius: 24,
-            padding: 28,
-            boxShadow: "0 12px 32px rgba(0,0,0,0.06)",
+            display: "grid",
+            gridTemplateColumns: "1.2fr 0.8fr",
+            gap: 16,
+            marginBottom: 18,
           }}
         >
           <div
             style={{
+              background: "aliceblue",
+              border: "1px solid lightblue",
+              borderRadius: 20,
+              padding: "24px 28px",
               display: "flex",
-              justifyContent: "space-between",
-              gap: 20,
               alignItems: "center",
-              flexWrap: "wrap",
+              gap: 16,
             }}
           >
+            <div style={{ fontSize: 42 }}>📊</div>
             <div>
               <div
                 style={{
-                  fontSize: 14,
-                  color: "#6b7280",
+                  fontSize: 12,
+                  color: "slategray",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
                   fontWeight: 700,
-                  letterSpacing: 0.3,
-                  marginBottom: 8,
                 }}
               >
-                DASHBOARD EXECUTIVO DE QA
+                Dashboard Executivo de QA
               </div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: 44,
-                  lineHeight: 1.05,
-                }}
-              >
-                📊 TestPulse
-              </h1>
-              <p
-                style={{
-                  margin: "10px 0 0 0",
-                  color: "#4b5563",
-                  fontSize: 16,
-                }}
-              >
-                Visão consolidada da execução de testes e bugs por US
-              </p>
+              <div style={{ fontSize: 30, fontWeight: 900, marginTop: 4 }}>
+                TestPulse
+              </div>
+              <div style={{ fontSize: 14, color: "slategray", marginTop: 4 }}>
+                Visão consolidada da execução de testes por US
+              </div>
             </div>
+          </div>
 
+          <div
+            style={{
+              background: "white",
+              border: "1px solid gainsboro",
+              borderRadius: 20,
+              padding: "22px 24px",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
             <div
               style={{
-                minWidth: 280,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 18,
-                padding: 18,
-                boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+                fontSize: 12,
+                color: "slategray",
+                marginBottom: 8,
+                textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>
-                US mais crítica
-              </div>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>
-                {worstUs?.us ?? "-"}
-              </div>
-              <div style={{ marginTop: 8, fontSize: 14, color: "#4b5563" }}>
-                Failed: <strong>{worstUs?.failed ?? 0}</strong> | Não executado:{" "}
-                <strong>{worstUs?.notExecuted ?? 0}</strong> | Bugs abertos:{" "}
-                <strong>{worstUs?.bugsOpen ?? 0}</strong>
-              </div>
+              US mais crítica
+            </div>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 900,
+                textAlign: "center",
+              }}
+            >
+              {summary.mostCritical?.us ?? "-"}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "slategray",
+                marginTop: 8,
+                textAlign: "center",
+              }}
+            >
+              Failed: {summary.mostCritical?.failed ?? 0} | Não executado:{" "}
+              {summary.mostCritical?.notExecuted ?? 0}
             </div>
           </div>
         </div>
@@ -337,36 +447,79 @@ export default function App() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: 12,
+            marginBottom: 12,
           }}
         >
-          <KpiCard title="Total de casos" value={totals.total} subtitle="Escopo consolidado" />
-          <KpiCard title="Executados" value={totals.executed} subtitle="Passed + Failed" />
-          <KpiCard title="Passed" value={totals.passed} subtitle="Execuções com sucesso" />
-          <KpiCard title="Failed" value={totals.failed} subtitle="Execuções com falha" />
-          <KpiCard title="Não executados" value={totals.notExecuted} subtitle="Pendentes" />
-          <KpiCard title="Cobertura" value={`${totals.coverage}%`} subtitle="Execução sobre total" />
-          <KpiCard title="Bugs abertos" value={totals.bugsOpen} subtitle="Pendências atuais" />
-          <KpiCard title="Bugs fechados" value={totals.bugsClosed} subtitle="Resolvidos no dia" />
+          <KpiCard
+            title="Total de casos"
+            value={summary.totalCases}
+            subtitle="Escopo consolidado"
+          />
+          <KpiCard
+            title="Executados"
+            value={summary.executed}
+            subtitle="Passed + Failed"
+          />
+          <KpiCard
+            title="Passed"
+            value={summary.passed}
+            subtitle="Execuções com sucesso"
+          />
+          <KpiCard
+            title="Failed"
+            value={summary.failed}
+            subtitle="Execuções com falha"
+          />
+          <KpiCard
+            title="Não executados"
+            value={summary.notExecuted}
+            subtitle="Pendentes"
+          />
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.2fr 360px 360px",
-            gap: 20,
-            marginBottom: 28,
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 12,
+            marginBottom: 20,
+            maxWidth: 720,
+          }}
+        >
+          <KpiCard
+            title="Cobertura"
+            value={formatPercent(summary.coverage)}
+            subtitle="Execução sobre total"
+          />
+          <KpiCard
+            title="Bugs abertos"
+            value={summary.bugsOpen}
+            subtitle="Pendências de bug"
+          />
+          <KpiCard
+            title="Bugs fechados"
+            value={summary.bugsClosed}
+            subtitle="Resolvidos no ciclo"
+          />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr 0.9fr 0.9fr",
+            gap: 14,
+            marginBottom: 26,
           }}
         >
           <div
             style={{
-              background: "#fff",
-              borderRadius: 20,
-              border: "1px solid #e5e7eb",
-              padding: 24,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+              background: "white",
+              border: "1px solid gainsboro",
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
             }}
           >
             <div
@@ -374,96 +527,104 @@ export default function App() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                gap: 12,
-                marginBottom: 20,
-                flexWrap: "wrap",
               }}
             >
               <div>
-                <h2 style={{ margin: 0, fontSize: 26 }}>Resumo geral</h2>
-                <p style={{ margin: "6px 0 0 0", color: "#6b7280" }}>
+                <div style={{ fontSize: 15, fontWeight: 900 }}>Resumo geral</div>
+                <div style={{ fontSize: 12, color: "slategray", marginTop: 6 }}>
                   Indicadores consolidados do ciclo atual
-                </p>
+                </div>
               </div>
 
               <div
                 style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 14,
-                  padding: "10px 14px",
-                  fontSize: 14,
-                  color: "#4b5563",
+                  padding: "8px 10px",
+                  borderRadius: 12,
+                  border: "1px solid gainsboro",
+                  fontSize: 12,
+                  color: "dimgray",
+                  background: "whitesmoke",
+                  fontWeight: 700,
                 }}
               >
-                Pass Rate: <strong>{totals.passRate}%</strong>
+                Pass Rate: {formatPercent(summary.passRate)}
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginTop: 22 }}>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: 14,
+                  fontSize: 12,
+                  color: "dimgray",
                   marginBottom: 8,
                 }}
               >
-                <span style={{ color: "#4b5563" }}>Cobertura de execução</span>
-                <strong>{totals.coverage}%</strong>
+                <span>Cobertura de execução</span>
+                <span style={{ fontWeight: 800 }}>
+                  {formatPercent(summary.coverage)}
+                </span>
               </div>
-              <ProgressBar value={totals.coverage} />
+              <ProgressBar value={summary.coverage} />
             </div>
 
             <div
               style={{
+                marginTop: 22,
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 16,
-                marginTop: 20,
+                gap: 12,
               }}
             >
               <div
                 style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  borderRadius: 14,
-                  padding: 16,
+                  background: "honeydew",
+                  border: "1px solid lightgreen",
+                  borderRadius: 12,
+                  padding: 12,
+                  textAlign: "center",
                 }}
               >
-                <div style={{ color: "#15803d", fontSize: 13 }}>Passed</div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: "#166534" }}>
-                  {totals.passed}
+                <div style={{ fontSize: 11, color: "seagreen", marginBottom: 6 }}>
+                  Passed
+                </div>
+                <div style={{ fontSize: 24, color: "green", fontWeight: 900 }}>
+                  {summary.passed}
                 </div>
               </div>
 
               <div
                 style={{
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 14,
-                  padding: 16,
+                  background: "mistyrose",
+                  border: "1px solid lightcoral",
+                  borderRadius: 12,
+                  padding: 12,
+                  textAlign: "center",
                 }}
               >
-                <div style={{ color: "#b91c1c", fontSize: 13 }}>Failed</div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: "#991b1b" }}>
-                  {totals.failed}
+                <div style={{ fontSize: 11, color: "firebrick", marginBottom: 6 }}>
+                  Failed
+                </div>
+                <div style={{ fontSize: 24, color: "red", fontWeight: 900 }}>
+                  {summary.failed}
                 </div>
               </div>
 
               <div
                 style={{
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 14,
-                  padding: 16,
+                  background: "whitesmoke",
+                  border: "1px solid gainsboro",
+                  borderRadius: 12,
+                  padding: 12,
+                  textAlign: "center",
                 }}
               >
-                <div style={{ color: "#6b7280", fontSize: 13 }}>
+                <div style={{ fontSize: 11, color: "slategray", marginBottom: 6 }}>
                   Não executado
                 </div>
-                <div style={{ fontSize: 30, fontWeight: 800, color: "#374151" }}>
-                  {totals.notExecuted}
+                <div style={{ fontSize: 24, color: "gray", fontWeight: 900 }}>
+                  {summary.notExecuted}
                 </div>
               </div>
             </div>
@@ -471,171 +632,219 @@ export default function App() {
 
           <div
             style={{
-              background: "#fff",
-              borderRadius: 20,
-              border: "1px solid #e5e7eb",
-              padding: 24,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+              background: "white",
+              border: "1px solid gainsboro",
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
             }}
           >
-            <h2 style={{ marginTop: 0, marginBottom: 18, textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 900,
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
               Gráfico geral
-            </h2>
-
-            <StatusDonutChart
-              passed={totals.passed}
-              failed={totals.failed}
-              notExecuted={totals.notExecuted}
-              size={220}
+            </div>
+            <DonutChart
+              passed={summary.passed}
+              failed={summary.failed}
+              notExecuted={summary.notExecuted}
             />
           </div>
 
           <div
             style={{
-              background: "#fff",
-              borderRadius: 20,
-              border: "1px solid #e5e7eb",
-              padding: 24,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+              background: "white",
+              border: "1px solid gainsboro",
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
             }}
           >
-            <h2 style={{ marginTop: 0, marginBottom: 18, textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 900,
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
               Gráfico de bugs
-            </h2>
+            </div>
 
-            <BugsDonutChart
-              bugsOpen={totals.bugsOpen}
-              bugsClosed={totals.bugsClosed}
-              size={220}
-            />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <DonutChart
+                passed={summary.bugsClosed}
+                failed={summary.bugsOpen}
+                notExecuted={0}
+              />
+            </div>
+
+            <div
+              style={{
+                textAlign: "center",
+                fontSize: 12,
+                marginTop: 2,
+                lineHeight: 1.7,
+              }}
+            >
+              <div style={{ color: "royalblue", fontWeight: 700 }}>
+                Abertos: {summary.bugsOpen}
+              </div>
+              <div style={{ color: "darkorange", fontWeight: 700 }}>
+                Fechados: {summary.bugsClosed}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 28 }}>Por US</h2>
-          <p style={{ margin: "6px 0 0 0", color: "#6b7280" }}>
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 28, fontWeight: 900 }}>Por US</div>
+          <div style={{ fontSize: 14, color: "slategray", marginTop: 6 }}>
             Acompanhamento visual, execução e bugs por história
-          </p>
+          </div>
         </div>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(500px, 1fr))",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: 18,
           }}
         >
-          {dailyReport.map((item, index) => {
-            const total = item.passed + item.failed + item.notExecuted;
-            const executed = item.passed + item.failed;
-            const coverage = total ? Math.round((executed / total) * 100) : 0;
-            const hasIssue =
-              item.failed > 0 || item.notExecuted > 0 || item.bugsOpen > 0;
+          {report.map((item) => {
+            const total = getTotal(item);
+            const coverage = getCoverage(item);
+            const status = getStatusLabel(item);
+            const statusColors = getStatusColors(status);
 
             return (
               <div
-                key={index}
+                key={item.us}
                 style={{
-                  border: hasIssue ? "1px solid #fed7aa" : "1px solid #e5e7eb",
-                  padding: 22,
+                  background: "seashell",
+                  border: "1px solid burlywood",
                   borderRadius: 18,
-                  background: hasIssue ? "#fffaf5" : "#ffffff",
-                  display: "grid",
-                  gridTemplateColumns: "160px 1fr 160px",
-                  gap: 18,
-                  alignItems: "center",
-                  boxShadow: "0 10px 28px rgba(0,0,0,0.05)",
+                  padding: 18,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                 }}
               >
-                <div>
-                  <StatusDonutChart
-                    passed={item.passed}
-                    failed={item.failed}
-                    notExecuted={item.notExecuted}
-                    size={110}
-                  />
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <h3 style={{ margin: 0, color: "#374151", fontSize: 24 }}>
-                      {item.us}
-                    </h3>
-
-                    <span
-                      style={{
-                        background: hasIssue ? "#fff7ed" : "#ecfdf5",
-                        color: hasIssue ? "#c2410c" : "#15803d",
-                        border: `1px solid ${hasIssue ? "#fdba74" : "#86efac"}`,
-                        borderRadius: 999,
-                        padding: "6px 10px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {hasIssue ? "Atenção" : "Saudável"}
-                    </span>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "88px 1fr 88px",
+                    gap: 14,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <MiniDonut
+                      passed={item.passed}
+                      failed={item.failed}
+                      notExecuted={item.notExecuted}
+                    />
                   </div>
 
-                  <div style={{ marginBottom: 14 }}>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 23,
+                        fontWeight: 900,
+                        marginBottom: 10,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.us}
+                    </div>
+
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        fontSize: 13,
-                        marginBottom: 6,
-                        color: "#4b5563",
+                        fontSize: 12,
+                        color: "slategray",
+                        marginBottom: 8,
                       }}
                     >
                       <span>Cobertura da US</span>
-                      <strong>{coverage}%</strong>
+                      <span style={{ fontWeight: 800 }}>
+                        {formatPercent(coverage)}
+                      </span>
                     </div>
-                    <ProgressBar
-                      value={coverage}
-                      color={hasIssue ? "#f59e0b" : "#2563eb"}
-                    />
+
+                    <ProgressBar value={coverage} />
+
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, 1fr)",
+                        gap: 10,
+                        fontSize: 14,
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: "green", fontWeight: 800 }}>
+                          Passed: {item.passed}
+                        </div>
+                        <div style={{ color: "gray", marginTop: 6 }}>
+                          Não executado: {item.notExecuted}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: "red", fontWeight: 800 }}>
+                          Failed: {item.failed}
+                        </div>
+                        <div
+                          style={{
+                            color: "midnightblue",
+                            marginTop: 6,
+                            fontWeight: 700,
+                          }}
+                        >
+                          Total: {total}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 14,
+                        display: "flex",
+                        gap: 18,
+                        fontSize: 13,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ color: "chocolate", fontWeight: 700 }}>
+                        Bug aberto: {item.bugsOpen}
+                      </div>
+                      <div style={{ color: "royalblue", fontWeight: 700 }}>
+                        Fechado: {item.bugsClosed}
+                      </div>
+                    </div>
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, 1fr)",
-                      gap: 10,
-                      fontSize: 16,
-                    }}
-                  >
-                    <div style={{ color: "#16a34a" }}>Passed: {item.passed}</div>
-                    <div style={{ color: "#dc2626" }}>Failed: {item.failed}</div>
-                    <div style={{ color: "#6b7280" }}>
-                      Não executado: {item.notExecuted}
-                    </div>
-                    <div>
-                      <strong>Total:</strong> {total}
-                    </div>
-                    <div style={{ color: "#d97706" }}>
-                      Bugs abertos: {item.bugsOpen}
-                    </div>
-                    <div style={{ color: "#2563eb" }}>
-                      Bugs fechados: {item.bugsClosed}
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <div
+                      style={{
+                        background: statusColors.bg,
+                        border: `1px solid ${statusColors.border}`,
+                        color: statusColors.text,
+                        borderRadius: 999,
+                        padding: "8px 12px",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {status}
                     </div>
                   </div>
-                </div>
-
-                <div>
-                  <BugsDonutChart
-                    bugsOpen={item.bugsOpen}
-                    bugsClosed={item.bugsClosed}
-                    size={110}
-                  />
                 </div>
               </div>
             );

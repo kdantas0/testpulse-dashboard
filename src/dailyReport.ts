@@ -31,13 +31,12 @@ export const dailyReport = [
     bugsOpen: 2,
     bugsClosed: 0,
   },
- {
-  us: "US05 - Consulta de Instalação e Produto",
-  passed: 0,
-  failed: 0,
-  notExecuted: 0,
-  bugsOpen: 0,
-  bugsClosed: 0,
-  status: "planejada"
-},
+  {
+    us: "US05 - Consulta de Instalação e Produto",
+    passed: 0,
+    failed: 0,
+    notExecuted: 0,
+    bugsOpen: 0,
+    bugsClosed: 0,
+  },
 ];
