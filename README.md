@@ -15,7 +15,7 @@ Dashboard de acompanhamento de execução de testes e bugs por US.
 - Identificação de US crítica
 
 ## 📸 Preview
-(coloca print do dashboard)
+<img width="278" height="634" alt="image" src="https://github.com/user-attachments/assets/7c735801-28d5-4006-8ffe-027e97f36f8d" />
 
 ## ▶️ Como rodar
 npm install
